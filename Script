@@ -1,0 +1,133 @@
+-- Nota: Coloque este script em um LocalScript dentro do StarterGui
+
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Criação do GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NotesGui"
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Name = "NoteFrame"
+frame.Size = UDim2.new(0, 400, 0, 250) -- Tamanho inicial aumentado
+frame.Position = UDim2.new(0.5, -200, 0.5, -125)
+frame.BackgroundColor3 = Color3.new(1, 1, 1)
+frame.BorderSizePixel = 1
+frame.Parent = screenGui
+
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Name = "ScrollingFrame"
+scrollingFrame.Size = UDim2.new(1, -20, 1, -60)
+scrollingFrame.Position = UDim2.new(0, 10, 0, 50)
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 1, 0)
+scrollingFrame.ScrollBarThickness = 10
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.Parent = frame
+
+local textBox = Instance.new("TextBox")
+textBox.Name = "NoteTextBox"
+textBox.Size = UDim2.new(1, -20, 1, -20)
+textBox.Position = UDim2.new(0, 10, 0, 10)
+textBox.Text = "Digite suas anotações aqui..."
+textBox.MultiLine = true
+textBox.ClearTextOnFocus = false
+textBox.TextWrapped = true
+textBox.Font = Enum.Font.SourceSans
+textBox.TextSize = 24 -- Aumentar o tamanho da fonte
+textBox.BackgroundTransparency = 1
+textBox.Parent = scrollingFrame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -40, 0, 10)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.new(1, 1, 1)
+closeButton.BackgroundColor3 = Color3.new(1, 0, 0)
+closeButton.Font = Enum.Font.SourceSans
+closeButton.TextSize = 24 -- Aumentar o tamanho da fonte
+closeButton.Parent = frame
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+minimizeButton.Position = UDim2.new(1, -80, 0, 10)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+minimizeButton.BackgroundColor3 = Color3.new(0, 0, 1)
+minimizeButton.Font = Enum.Font.SourceSans
+minimizeButton.TextSize = 24 -- Aumentar o tamanho da fonte
+minimizeButton.Parent = frame
+
+local header = Instance.new("TextLabel")
+header.Name = "Header"
+header.Size = UDim2.new(1, -90, 0, 30)
+header.Position = UDim2.new(0, 10, 0, 10)
+header.Text = "Minhas Anotações"
+header.BackgroundTransparency = 1
+header.TextColor3 = Color3.new(0, 0, 0)
+header.Font = Enum.Font.SourceSans
+header.TextSize = 24 -- Aumentar o tamanho da fonte
+header.Parent = frame
+
+local isMinimized = false
+
+-- Função para fechar o painel
+closeButton.MouseButton1Click:Connect(function()
+    frame:Destroy()
+end)
+
+-- Função para minimizar/maximizar o painel
+minimizeButton.MouseButton1Click:Connect(function()
+    if isMinimized then
+        frame:TweenSize(UDim2.new(0, 400, 0, 250), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.5, true)
+        minimizeButton.Text = "-"
+    else
+        frame:TweenSize(UDim2.new(0, 400, 0, 40), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.5, true)
+        minimizeButton.Text = "+"
+    end
+    isMinimized = not isMinimized
+end)
+
+-- Função para mover o painel
+local dragging = false
+local dragInput, dragStart, startPos
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Ajustar o tamanho do frame baseado no tamanho do texto
+textBox:GetPropertyChangedSignal("Text"):Connect(function()
+    local textSize = textBox.TextBounds
+    local newHeight = math.max(250, textSize.Y + 60)
+    frame.Size = UDim2.new(0, 400, 0, newHeight)
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, textSize.Y + 20)
+end)
